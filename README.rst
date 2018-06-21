@@ -3,7 +3,8 @@
 Introduction
 ------------
 (NOTE: The reason I forked this was to fix how the ratio was being computed to use the length of the longest string
-rather than sum of the lengths of the strings.
+rather than sum of the lengths of the strings.)
+
 The Levenshtein Python C extension module contains functions for fast
 computation of
 
