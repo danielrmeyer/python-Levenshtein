@@ -653,7 +653,8 @@ static long int
 levenshtein_common(PyObject *args,
                    const char *name,
                    size_t xcost,
-                   size_t *lensum);
+                   size_t *lensum,
+                   size_t *lmax);
 
 static int
 extract_stringlist(PyObject *list,
@@ -693,7 +694,7 @@ setseq_common(PyObject *args,
 
 static long int
 levenshtein_common(PyObject *args, const char *name, size_t xcost,
-                   size_t *lensum)
+                   size_t *lensum, size_t *lmax)
 {
   PyObject *arg1, *arg2;
   size_t len1, len2;
@@ -708,6 +709,11 @@ levenshtein_common(PyObject *args, const char *name, size_t xcost,
     len1 = PyString_GET_SIZE(arg1);
     len2 = PyString_GET_SIZE(arg2);
     *lensum = len1 + len2;
+    if (len1 >= len2)
+      *lmax = len1;
+    else
+      *lmax = len2;
+    /* *lmax = (size_t)fmax(len1, len2); */
     string1 = PyString_AS_STRING(arg1);
     string2 = PyString_AS_STRING(arg2);
     {
@@ -726,6 +732,11 @@ levenshtein_common(PyObject *args, const char *name, size_t xcost,
     len1 = PyUnicode_GET_SIZE(arg1);
     len2 = PyUnicode_GET_SIZE(arg2);
     *lensum = len1 + len2;
+    if (len1 >= len2)
+      *lmax = len1;
+    else
+      *lmax = len2;
+    /* *lmax = (int)fmax(len1, len2); */
     string1 = PyUnicode_AS_UNICODE(arg1);
     string2 = PyUnicode_AS_UNICODE(arg2);
     {
@@ -748,9 +759,10 @@ static PyObject*
 distance_py(PyObject *self, PyObject *args)
 {
   size_t lensum;
+  size_t lmax;
   long int ldist;
 
-  if ((ldist = levenshtein_common(args, "distance", 0, &lensum)) < 0)
+  if ((ldist = levenshtein_common(args, "distance", 0, &lensum, &lmax)) < 0)
     return NULL;
 
   return PyInt_FromLong((long)ldist);
@@ -760,15 +772,18 @@ static PyObject*
 ratio_py(PyObject *self, PyObject *args)
 {
   size_t lensum;
+  size_t lmax;
   long int ldist;
 
-  if ((ldist = levenshtein_common(args, "ratio", 1, &lensum)) < 0)
+  if ((ldist = levenshtein_common(args, "ratio", 0, &lensum, &lmax)) < 0)
     return NULL;
 
   if (lensum == 0)
     return PyFloat_FromDouble(1.0);
 
-  return PyFloat_FromDouble((double)(lensum - ldist)/(lensum));
+  return PyFloat_FromDouble((double)(lmax - ldist)/(lmax));
+  /* return PyFloat_FromDouble((double)lmax); */
+  /* return PyFloat_FromDouble((double)ldist); */
 }
 
 static PyObject*
